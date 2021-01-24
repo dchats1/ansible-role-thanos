@@ -5,6 +5,9 @@
     mode: '0755'
     state: directory
 
+- include_tasks: store.yml
+  when: thanos_store
+
 - include_tasks: query.yml
 - include_tasks: nginx.yml
 

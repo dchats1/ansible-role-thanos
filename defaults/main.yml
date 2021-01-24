@@ -15,4 +15,19 @@ thanos_query_command:
   - '--http-address=0.0.0.0:{{ thanos_web_port }}'
   - '--grpc-address=0.0.0.0:{{ thanos_grpc_port }}'
   - '--query.replica-label={{ thanos_query_replica_label }}'
+  - '--store={{ thanos_store_ip }}:{{ thanos_grpc_port }}'
 thanos_query_replica_label: prometheus_replica
+thanos_store: false # Deploy Thanos store
+thanos_store_command:
+  - store
+  - --data-dir=/data
+  - |
+    --objstore.config=type: S3 
+    config:
+      bucket: thanos
+      region: us-east-1
+      endpoint: s3.example.com
+      access_key: secret
+      secret_key: secret
+      insecure: false
+      signature_version2: false

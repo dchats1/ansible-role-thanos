@@ -1,0 +1,47 @@
+---
+- name: Create Thanos Store data volume
+  containers.podman.podman_volume:
+    state: present
+    name: '{{ prometheus_hostname }}-store-data-volume'
+    label:
+      app: thanos
+
+- name: Create Store Pod
+  containers.podman.podman_pod:
+    name: 'thanos-store-pod'
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: 'thanos-store.{{ thanos_domain }}'
+
+### Get IPs of Thanos Store pod
+- name: Get Query Pod Infra Containers
+  containers.podman.podman_pod_info:
+    name: 'thanos-store-pod'
+  register: pod_info
+
+- set_fact:
+    thanos_store_id: '{{ pod_info.pods[0].InfraContainerID  }}'
+
+- name: Get Infra Container info
+  containers.podman.podman_container_info:
+    name: '{{ thanos_store_id }}'
+  register: container_info
+
+- set_fact:
+    thanos_store_ip: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'containers[0].NetworkSettings.Networks.{{ prometheus_podman_network }}.IPAddress'
+###
+
+- name: Setup Thanos Store container
+  containers.podman.podman_container:
+    name: thanos-store
+    image: 'quay.io/thanos/thanos:v{{ thanos_version }}'
+    pod: 'thanos-store-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-store.pid'
+    volume:
+      - '{{ prometheus_hostname }}-store-data-volume:/data'
+    command: '{{ thanos_store_command }}'
+
+- debug:
+    msg: 'Thanos Store IP: {{ thanos_store_ip }}'

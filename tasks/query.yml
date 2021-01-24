@@ -3,9 +3,6 @@
     thanos_query_command: '{{ thanos_query_command + [ "--store=" + item ] }}'
   loop: '{{ thanos_sidecars }}'
 
-- debug:
-    msg: '{{ thanos_query_command }}'
-
 - name: Create Query Pods
   containers.podman.podman_pod:
     name: 'thanos-query-{{ item }}-pod'
