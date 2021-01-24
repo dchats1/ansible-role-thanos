@@ -1,0 +1,29 @@
+---
+- name: Add nginx load balancer config
+  template:
+    src: nginx.conf
+    dest: '{{ thanos_base_dir }}/thanos-config/nginx.conf'
+    mode: '0644'
+  notify: Restart Nginx
+
+- name: Create Load Balancer pod
+  containers.podman.podman_pod:
+    name: thanos-loadbalancer-pod
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: '{{ thanos_hostname}}.{{ thanos_domain }}'
+
+- name: Setup Nginx LoadBalancer
+  containers.podman.podman_container:
+    name: thanos-loadbalancer
+    image: docker.io/library/nginx:latest
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-lb.pid'
+    pod: thanos-loadbalancer-pod
+    volume:
+      - '{{ thanos_base_dir }}/thanos-config/nginx.conf:/etc/nginx/nginx.conf:Z'
+    state: started
+
+- name: Generate systemd files for nginx
+  include_tasks: systemd.yml
+  vars:
+    item: thanos-loadbalancer

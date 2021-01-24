@@ -1,2 +1,18 @@
 ---
-# defaults file for thanos
+thanos_version: 0.17.0
+thanos_podman_network: podman
+thanos_hostname: thanos
+thanos_domain: example.com
+thanos_base_dir: /var/lib/containers
+thanos_web_port: 10902
+thanos_grpc_port: 10901
+thanos_query_replicas: 2
+thanos_sidecars: []
+#thanos_sidecars:
+#  - prometheus-sidecar.example.com:10901
+thanos_query_command:
+  - query
+  - '--http-address=0.0.0.0:{{ thanos_web_port }}'
+  - '--grpc-address=0.0.0.0:{{ thanos_grpc_port }}'
+  - '--query.replica-label={{ thanos_query_replica_label }}'
+thanos_query_replica_label: prometheus_replica

@@ -1,2 +1,30 @@
 ---
-# tasks file for thanos
+- name: Create config directory
+  file:
+    path: '{{ thanos_base_dir }}/thanos-config'
+    mode: '0755'
+    state: directory
+
+- include_tasks: query.yml
+- include_tasks: nginx.yml
+
+- name: Get Load Balancer IP
+  containers.podman.podman_pod_info:
+    name:  thanos-loadbalancer-pod
+  register: pod_info
+
+- set_fact:
+    thanos_loadbalancer_id: '{{ pod_info.pods[0].InfraContainerID }}'
+
+- name: get pod IP
+  containers.podman.podman_container_info:
+    name: '{{ thanos_loadbalancer_id }}'
+  register: container_info
+
+- set_fact:
+    thanos_loadbalancer_pod_ip: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+
+- debug:
+    msg: 'Cortex Load Balancer IP: {{ thanos_loadbalancer_pod_ip }}'

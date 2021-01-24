@@ -1,0 +1,59 @@
+---
+- set_fact:
+    thanos_query_command: '{{ thanos_query_command + [ "--store=" + item ] }}'
+  loop: '{{ thanos_sidecars }}'
+
+- debug:
+    msg: '{{ thanos_query_command }}'
+
+- name: Create Query Pods
+  containers.podman.podman_pod:
+    name: 'thanos-query-{{ item }}-pod'
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: 'thanos-query-{{ item|string + "." + thanos_domain }}'
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+  when: thanos_query_replicas > 0
+
+### Get IPs of pods to be used by nginx for load balancing
+- name: Get Query Pod Infra Containers
+  containers.podman.podman_pod_info:
+    name: 'thanos-query-{{ item|string }}-pod'
+  register: pod_info
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
+- set_fact:
+    thanos_query_ids: '{{ thanos_query_ids|default([]) + [ pod_info.results[ item ].pods[0].InfraContainerID ] }}'
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
+- name: get pod IP
+  containers.podman.podman_container_info:
+    name: '{{ item }}'
+  register: container_info
+  loop: '{{ thanos_query_ids }}'
+
+- set_fact:
+    thanos_query_pod_ips: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'results[*].containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+###
+
+- name: Setup Thanos Query containers
+  containers.podman.podman_container:
+    name: 'thanos-query-{{ item }}'
+    image: 'quay.io/thanos/thanos:v{{ thanos_version }}'
+    pod: 'thanos-query-{{ item }}-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-query-{{ item }}.pid'
+    command: '{{ thanos_query_command }}'
+    state: started
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
+- set_fact:
+    thanos_query_containers: '{{ thanos_query_containers|default([]) + [ "thanos-query-" +  item|string ] }}'
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
+- name: Generate systemd files for querys
+  include_tasks: systemd.yml
+  loop: '{{ thanos_query_containers }}'
+
+

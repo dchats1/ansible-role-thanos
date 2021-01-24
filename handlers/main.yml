@@ -1,2 +1,9 @@
 ---
-# handlers file for thanos
+- name: daemon-reload
+  systemd:
+    daemon-reload: yes
+
+- name: Restart Nginx
+  systemd:
+    name: container-thanos-loadbalancer.service
+    state: restarted
