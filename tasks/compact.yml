@@ -1,0 +1,40 @@
+---
+- name: Create Compactor Pod
+  containers.podman.podman_pod:
+    name: 'thanos-compact-pod'
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: 'thanos-compact.{{ thanos_domain }}'
+
+### Get IP of Thanos Compactor pod
+- name: Get Query Pod Infra Containers
+  containers.podman.podman_pod_info:
+    name: 'thanos-compact-pod'
+  register: pod_info
+
+- set_fact:
+    thanos_compact_id: '{{ pod_info.pods[0].InfraContainerID  }}'
+
+- name: Get Infra Container info
+  containers.podman.podman_container_info:
+    name: '{{ thanos_compact_id }}'
+  register: container_info
+
+- set_fact:
+    thanos_compact_ip: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'containers[0].NetworkSettings.Networks.{{ prometheus_podman_network }}.IPAddress'
+###
+
+- name: Setup Thanos Compactor container
+  containers.podman.podman_container:
+    name: thanos-compact
+    image: 'quay.io/thanos/thanos:v{{ thanos_version }}'
+    pod: 'thanos-compact-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-compact.pid'
+    volume:
+      - '{{ prometheus_hostname }}-compact-data-volume:/data'
+    command: '{{ thanos_compact_command }}'
+
+- debug:
+    msg: 'Thanos Compactor IP: {{ thanos_compact_ip }}'

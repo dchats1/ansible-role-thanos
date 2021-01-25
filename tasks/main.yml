@@ -8,6 +8,9 @@
 - include_tasks: store.yml
   when: thanos_store
 
+- include_tasks: compact.yml
+  when: thanos_store
+
 - include_tasks: query.yml
 - include_tasks: nginx.yml
 
@@ -30,4 +33,13 @@
     query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
 
 - debug:
-    msg: 'Cortex Load Balancer IP: {{ thanos_loadbalancer_pod_ip }}'
+    msg: 'Thanos Query IP(s): {{ thanos_query_pod_ips }}'
+
+- debug:
+    msg: 'Thanos Store IP: {{ thanos_store_ip }}'
+
+- debug:
+    msg: 'Thanos Compactor IP: {{ thanos_compact_ip }}'
+
+- debug:
+    msg: 'Thanos Load Balancer IP: {{ thanos_loadbalancer_pod_ip }}'
