@@ -16,6 +16,7 @@ thanos_query_frontend_command:
   - '--http-address=0.0.0.0:{{ thanos_query_frontend_port }}'
   - '--query-frontend.downstream-url=http://localhost:{{ 10902 }}'
   - --query-frontend.log-queries-longer-than=5s
+  - --query-range.split-interval=24h
 thanos_query_frontend_caching_command: []
 thanos_sidecars: []
 #thanos_sidecars:
