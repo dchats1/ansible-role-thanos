@@ -7,6 +7,8 @@ thanos_base_dir: /var/lib/containers
 thanos_web_port: 10902
 thanos_grpc_port: 10901
 thanos_query_replicas: 2
+thanos_memcached_enabled: false
+thanos_index_cache_config: []
 thanos_sidecars: []
 #thanos_sidecars:
 #  - prometheus-sidecar.example.com:10901

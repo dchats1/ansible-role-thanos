@@ -5,6 +5,9 @@
     mode: '0755'
     state: directory
 
+- include_tasks: memcached.yml
+  when: thanos_memcached_enabled | bool
+
 - include_tasks: store.yml
   when: thanos_store
 

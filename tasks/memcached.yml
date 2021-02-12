@@ -1,0 +1,39 @@
+---
+- name: Create Memcached Pod
+  containers.podman.podman_pod:
+    name: '{{ thanos_hostname }}-memcached-pod'
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: '{{ thanos_hostname }}-memcached.{{ thanos_domain }}'
+ 
+- name: Setup Memcached
+  containers.podman.podman_container:
+    name: '{{ thanos_hostname }}-memcached'
+    image: memcached
+    pod: '{{ thanos_hostname }}-memcached-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-memcached.pid'
+    command: 'memcached -m 1024 -vv'
+    state: started
+
+- name: Generate systemd files for Memcached
+  include_tasks: systemd.yml
+  loop:
+    - '{{ thanos_hostname }}-memcached'
+
+- name: Get Memcached pod infra container
+  containers.podman.podman_pod_info:
+    name: '{{ thanos_hostname }}-memcached-pod'
+  register: pod_info
+
+- set_fact:
+    thanos_memcached_id: '{{ pod_info.pods[0].InfraContainerID }}'
+
+- name: Get Memcached Pod IP
+  containers.podman.podman_container_info:
+    name: '{{ thanos_memcached_id }}'
+  register: container_info
+
+- set_fact:
+    thanos_memcached_pod_ip: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'

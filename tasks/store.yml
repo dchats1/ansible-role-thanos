@@ -1,4 +1,12 @@
 ---
+- name: Add Memcached index cache config
+  set_fact:
+    thanos_store_command: '{{ thanos_store_command + thanos_index_cache_config }}'
+  when: thanos_memcached_enabled | bool
+
+- debug:
+    msg: '{{ thanos_store_command }}'
+
 - name: Create Thanos Store data volume
   containers.podman.podman_volume:
     state: present
