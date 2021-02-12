@@ -45,6 +45,22 @@
     state: started
   loop: '{{ range(0, thanos_query_replicas)|list }}'
 
+- name: Add memcached to thanos_query_frontend_command
+  set_fact:
+    thanos_query_frontend_command: '{{ thanos_query_frontend_command + thanos_query_frontend_caching_command }}'
+  when: thanos_memcached_enabled | bool
+
+- name: Setup Thanos Query Frontend containers
+  containers.podman.podman_container:
+    name: 'thanos-query-frontend-{{ item }}'
+    image: 'quay.io/thanos/thanos:v{{ thanos_version }}'
+    pod: 'thanos-query-{{ item }}-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-query-frontend-{{ item }}.pid'
+    command: '{{ thanos_query_frontend_command }}'
+    state: started
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+  when: thanos_query_frontend_enabled | bool
+
 - set_fact:
     thanos_query_containers: '{{ thanos_query_containers|default([]) + [ "thanos-query-" +  item|string ] }}'
   loop: '{{ range(0, thanos_query_replicas)|list }}'
@@ -52,5 +68,3 @@
 - name: Generate systemd files for querys
   include_tasks: systemd.yml
   loop: '{{ thanos_query_containers }}'
-
-

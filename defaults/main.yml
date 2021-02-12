@@ -6,9 +6,17 @@ thanos_domain: example.com
 thanos_base_dir: /var/lib/containers
 thanos_web_port: 10902
 thanos_grpc_port: 10901
+thanos_query_frontend_port: 9090
 thanos_query_replicas: 2
 thanos_memcached_enabled: false
-thanos_index_cache_config: []
+thanos_cache_config: []
+thanos_query_frontend_enabled: false
+thanos_query_frontend_command:
+  - query-frontend
+  - '--http-address=0.0.0.0:{{ thanos_query_frontend_port }}'
+  - '--query-frontend.downstream-url=http://localhost:{{ 10902 }}'
+  - --query-frontend.log-queries-longer-than=5s
+thanos_query_frontend_caching_command: []
 thanos_sidecars: []
 #thanos_sidecars:
 #  - prometheus-sidecar.example.com:10901

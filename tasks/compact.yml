@@ -35,6 +35,3 @@
     volume:
       - '{{ prometheus_hostname }}-compact-data-volume:/data'
     command: '{{ thanos_compact_command }}'
-
-- debug:
-    msg: 'Thanos Compactor IP: {{ thanos_compact_ip }}'
