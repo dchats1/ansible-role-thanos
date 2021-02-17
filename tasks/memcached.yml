@@ -1,39 +1,57 @@
 ---
 - name: Create Memcached Pod
   containers.podman.podman_pod:
-    name: '{{ thanos_hostname }}-memcached-pod'
+    name: '{{ thanos_hostname }}-memcached-{{ item }}-pod'
     state: started
     network: '{{ thanos_podman_network }}'
     hostname: '{{ thanos_hostname }}-memcached.{{ thanos_domain }}'
+  loop: '{{ range(0, thanos_memcached_count)|list }}'
  
 - name: Setup Memcached
   containers.podman.podman_container:
-    name: '{{ thanos_hostname }}-memcached'
+    name: '{{ thanos_hostname }}-memcached-{{ item }}'
     image: memcached
-    pod: '{{ thanos_hostname }}-memcached-pod'
-    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-memcached.pid'
+    pod: '{{ thanos_hostname }}-memcached-{{ item }}-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-memcached-{{ item }}.pid'
     command: 'memcached -m 1024 -vv'
     state: started
+  loop: '{{ range(0, thanos_memcached_count)|list }}'
+
+- name: Get list of memcached container names
+  set_fact:
+    thanos_memcached_containers: '{{ thanos_memcached_containers|default([]) + [ thanos_hostname + "-memcached-" + item|string ] }}'
+  loop: '{{ range(0, thanos_memcached_count)|list }}'
 
 - name: Generate systemd files for Memcached
   include_tasks: systemd.yml
-  loop:
-    - '{{ thanos_hostname }}-memcached'
+  loop: '{{ thanos_memcached_containers }}'
 
 - name: Get Memcached pod infra container
   containers.podman.podman_pod_info:
-    name: '{{ thanos_hostname }}-memcached-pod'
+    name: '{{ thanos_hostname }}-memcached-{{ item }}-pod'
   register: pod_info
+  loop: '{{ range(0, thanos_memcached_count)|list }}'
 
-- set_fact:
-    thanos_memcached_id: '{{ pod_info.pods[0].InfraContainerID }}'
+- name: Get Memcached infra container ID(s)
+  set_fact:
+    thanos_memcached_ids: '{{ thanos_memcached_ids|default([]) + [ pod_info.results[ item ].pods[0].InfraContainerID ] }}'
+  loop: '{{ range(0, thanos_memcached_count)|list }}'
 
-- name: Get Memcached Pod IP
+- name: Get Memcached Infra Container(s) info 
   containers.podman.podman_container_info:
-    name: '{{ thanos_memcached_id }}'
+    name: '{{ item }}'
   register: container_info
+  loop: '{{ thanos_memcached_ids }}'
 
 - set_fact:
-    thanos_memcached_pod_ip: '{{ container_info | json_query(query) }}'
+    thanos_memcached_pod_ips: '{{ container_info | json_query(query) }}'
   vars:
-    query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+    query: 'results[*].containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+
+- name: Generate list of memached pod ips with port
+  set_fact:
+    thanos_memcached_addresses: '{{ thanos_memcached_addresses|default([]) + [ item + ":11211" ] }}'
+  loop: '{{ thanos_memcached_pod_ips }}'
+
+- debug:
+    msg: 'Memcached addresses: {{ thanos_memcached_addresses }}'

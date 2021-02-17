@@ -9,6 +9,7 @@ thanos_grpc_port: 10901
 thanos_query_frontend_port: 9090
 thanos_query_replicas: 2
 thanos_memcached_enabled: false
+thanos_memcached_count: 0
 thanos_cache_config: []
 thanos_query_frontend_enabled: false
 thanos_query_frontend_command:
