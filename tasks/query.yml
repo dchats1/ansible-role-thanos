@@ -19,6 +19,11 @@
   register: pod_info
   loop: '{{ range(0, thanos_query_replicas)|list }}'
 
+- name: Get thanos query hostnames
+  set_fact:
+    thanos_query_hostnames: '{{ thanos_query_hostnames|default([]) + [ pod_info.results[ item ].pods[0].Hostname ] }}'
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
 - set_fact:
     thanos_query_ids: '{{ thanos_query_ids|default([]) + [ pod_info.results[ item ].pods[0].InfraContainerID ] }}'
   loop: '{{ range(0, thanos_query_replicas)|list }}'
@@ -33,6 +38,12 @@
     thanos_query_pod_ips: '{{ container_info | json_query(query) }}'
   vars:
     query: 'results[*].containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+
+- name: Create dict of hostname and IPs
+  set_fact:
+    thanos_query_pods: '{{ thanos_query_pods|default({}) | combine ({ thanos_query_hostnames[ item ] : thanos_query_pod_ips[ item ]}) }}'
+  loop: '{{ range(0, thanos_query_replicas)|list }}'
+
 ###
 
 - name: Setup Thanos Query containers

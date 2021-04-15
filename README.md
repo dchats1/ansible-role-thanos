@@ -1,31 +1,80 @@
-Thanos
+Ansible Role Thanos
 =========
 
-A brief description of the role goes here.
+Deploy various Thanos components with Podman.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+This requires the containers.podman collection: https://galaxy.ansible.com/containers/podman
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Variable                         | Description
+---------------------------------|------------------
+thanos_version                   | Thanos Version (Default: 0.18.0)
+thanos_podman_network            | Podman network for pods. (Default: podman)
+thanos_hostname                  | Pod hostname (Default: thanos)
+thanos_domain                    | Pod domain (Default: example.com)
+thanos_base_dir: /var/lib/containers
+thanos_web_port: 10902
+thanos_grpc_port: 10901
+thanos_query_frontend_port: 9090
+thanos_query_replicas: 2
+thanos_memcached_enabled: false
+thanos_memcached_count: 0
+thanos_cache_config: []
+thanos_query_frontend_enabled: false
+thanos_query_frontend_command:
+  - query-frontend
+  - '--http-address=0.0.0.0:{{ thanos_query_frontend_port }}'
+  - '--query-frontend.downstream-url=http://localhost:{{ 10902 }}'
+  - --query-frontend.log-queries-longer-than=5s
+  - --query-range.split-interval=24h
+thanos_query_frontend_caching_command: []
+thanos_sidecars: []
+#thanos_sidecars:
+#  - prometheus-sidecar.example.com:10901
+thanos_query_command:
+  - query
+  - '--http-address=0.0.0.0:{{ thanos_web_port }}'
+  - '--grpc-address=0.0.0.0:{{ thanos_grpc_port }}'
+  - '--query.replica-label={{ thanos_query_replica_label }}'
+  - '--store={{ thanos_store_ip }}:{{ thanos_grpc_port }}'
+thanos_query_replica_label: prometheus_replica
+thanos_store: false # Deploy Thanos store
+thanos_store_command:
+  - store
+  - --data-dir=/data
+  - |
+    --objstore.config=type: S3 
+    config:
+      bucket: thanos
+      region: us-east-1
+      endpoint: s3.example.com
+      access_key: secret
+      secret_key: secret
+      insecure: false
+      signature_version2: false
+thanos_compact_command:
+  - compact
+  - --data-dir=/tmp/thanos-compact
+  - --wait
+  - |
+    --objstore.config=type: S3 
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+No dependencies at this time
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
+    - hosts: thanos
       roles:
-         - { role: username.rolename, x: 42 }
+         - ansible-role-thanos
 
 License
 -------
@@ -35,4 +84,5 @@ BSD
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+David Chatterton
+david@davidchatterton.com

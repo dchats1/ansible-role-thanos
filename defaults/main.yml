@@ -1,5 +1,5 @@
 ---
-thanos_version: 0.17.0
+thanos_version: 0.18.0
 thanos_podman_network: podman
 thanos_hostname: thanos
 thanos_domain: example.com
