@@ -14,6 +14,9 @@
 - include_tasks: compact.yml
   when: thanos_store
 
+- include_tasks: receive.yml
+  when: thanos_receive
+
 - include_tasks: query.yml
 - include_tasks: nginx.yml
 
@@ -43,6 +46,9 @@
 
 - debug:
     msg: 'Thanos Compactor IP: {{ thanos_compact_ip }}'
+
+- debug:
+    msg: 'Thanos Receive IP(s): {{ thanos_receive_pod_ips }}'
 
 - debug:
     msg: 'Thanos Load Balancer IP: {{ thanos_loadbalancer_pod_ip }}'

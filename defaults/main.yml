@@ -57,3 +57,21 @@ thanos_compact_command:
       secret_key: secret
       insecure: false
       signature_version2: false
+thanos_receive: false # Deploy Thanos Receive
+thanos_receive_replicas: 1
+thanos_receive_command:
+  - receive
+  - --tsdb.path=/data
+  - --receive.replication-factor=1
+  - --label "receive_replica=\"0\""
+  - --label "receive_cluster=\"thanos\""
+  - |
+    --objstore.config=type: S3 
+    config:
+      bucket: thanos
+      region: us-east-1
+      endpoint: s3.example.com
+      access_key: secret
+      secret_key: secret
+      insecure: false
+      signature_version2: false

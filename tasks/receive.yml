@@ -1,0 +1,58 @@
+---
+- name: Create Receive Pods
+  containers.podman.podman_pod:
+    name: 'thanos-receive-{{ item }}-pod'
+    state: started
+    network: '{{ thanos_podman_network }}'
+    hostname: 'thanos-receive-{{ item|string + "." + thanos_domain }}'
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
+### Get IPs of pods
+- name: Get Receive Pod Infra Containers
+  containers.podman.podman_pod_info:
+    name: 'thanos-receive-{{ item|string }}-pod'
+  register: pod_info
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
+- set_fact:
+    thanos_receive_ids: '{{ thanos_receive_ids|default([]) + [ pod_info.results[ item ].pods[0].InfraContainerID ] }}'
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
+- name: get pod IP
+  containers.podman.podman_container_info:
+    name: '{{ item }}'
+  register: container_info
+  loop: '{{ thanos_receive_ids }}'
+
+- set_fact:
+    thanos_receive_pod_ips: '{{ container_info | json_query(query) }}'
+  vars:
+    query: 'results[*].containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
+###
+
+- name: Create Thanos Receive TSDB volume
+  containers.podman.podman_volume:
+    state: present
+    name: '{{ thanos_hostname }}-receive-tsdb-volume'
+    label:
+      app: thanos
+
+- name: Setup Thanos Receive containers
+  containers.podman.podman_container:
+    name: 'thanos-receive-{{ item }}'
+    image: 'quay.io/thanos/thanos:v{{ thanos_version }}'
+    pod: 'thanos-receive-{{ item }}-pod'
+    conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-receive-{{ item }}.pid'
+    volume:
+      - '{{ thanos_hostname }}-receive-tsdb-volume:/tsdb'
+    command: '{{ thanos_receive_command }}'
+    state: started
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
+- set_fact:
+    thanos_receive_containers: '{{ thanos_receive_containers|default([]) + [ "thanos-receive-" +  item|string ] }}'
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
+#- name: Generate systemd files for receives
+#  include_tasks: systemd.yml
+#  loop: '{{ thanos_receive_containers }}'

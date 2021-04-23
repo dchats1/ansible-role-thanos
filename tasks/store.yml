@@ -19,7 +19,7 @@
     hostname: 'thanos-store.{{ thanos_domain }}'
 
 ### Get IPs of Thanos Store pod
-- name: Get Query Pod Infra Containers
+- name: Get Store Pod Infra Containers
   containers.podman.podman_pod_info:
     name: 'thanos-store-pod'
   register: pod_info
