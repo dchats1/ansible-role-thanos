@@ -30,12 +30,29 @@
     query: 'results[*].containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
 ###
 
+- name: Generate list of endpoints for hashring
+  set_fact:
+    thanos_receive_endpoints: '{{ thanos_receive_endpoints|default([]) + [ item + ":" + thanos_grpc_port|string ] }}'
+  loop: '{{ thanos_receive_pod_ips }}'
+
+- name: Generate hashring.json file
+  template:
+    src: hashring.json
+    dest: '{{ thanos_base_dir }}/thanos-config/hashring.json'
+    mode: '0644'
+
+- name: Set Receive command
+  set_fact:
+    thanos_receive_command: "{{ thanos_receive_command + [ '--label=receive_replica=\"' + item|string + '\"' ] }}"
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
+
 - name: Create Thanos Receive TSDB volume
   containers.podman.podman_volume:
     state: present
-    name: '{{ thanos_hostname }}-receive-tsdb-volume'
+    name: '{{ thanos_hostname }}-receive-{{ item }}-tsdb-volume'
     label:
       app: thanos
+  loop: '{{ range(0, thanos_receive_replicas)|list }}'
 
 - name: Setup Thanos Receive containers
   containers.podman.podman_container:
@@ -44,7 +61,8 @@
     pod: 'thanos-receive-{{ item }}-pod'
     conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-receive-{{ item }}.pid'
     volume:
-      - '{{ thanos_hostname }}-receive-tsdb-volume:/tsdb'
+      - '{{ thanos_hostname }}-receive-{{ item }}-tsdb-volume:/tsdb'
+      - '{{ thanos_base_dir }}/thanos-config/hashring.json:/data/hashring.json:z'
     command: '{{ thanos_receive_command }}'
     state: started
   loop: '{{ range(0, thanos_receive_replicas)|list }}'

@@ -1,7 +1,21 @@
 ---
-- set_fact:
+- name: Add just sidecars
+  set_fact:
     thanos_query_command: '{{ thanos_query_command + [ "--store=" + item ] }}'
   loop: '{{ thanos_sidecars }}'
+  when: thanos_receive_endpoints is not defined and not thanos_store|bool
+
+- name: Add sidecars store
+  set_fact:
+    thanos_query_command: '{{ thanos_query_command + [ "--store=" + item ] }}'
+  loop: '{{ thanos_sidecars + [ thanos_store_ip + ":" + thanos_grpc_port|string ] }}'
+  when: thanos_receive_endpoints is not defined
+
+- name: Add all stores
+  set_fact:
+    thanos_query_command: '{{ thanos_query_command + [ "--store=" + item ] }}'
+  loop: '{{ thanos_sidecars + thanos_receive_endpoints + [ thanos_store_ip + ":" + thanos_grpc_port|string ] }}'
+  when: thanos_receive_endpoints is defined
 
 - name: Create Query Pods
   containers.podman.podman_pod:

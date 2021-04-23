@@ -27,7 +27,6 @@ thanos_query_command:
   - '--http-address=0.0.0.0:{{ thanos_web_port }}'
   - '--grpc-address=0.0.0.0:{{ thanos_grpc_port }}'
   - '--query.replica-label={{ thanos_query_replica_label }}'
-  - '--store={{ thanos_store_ip }}:{{ thanos_grpc_port }}'
 thanos_query_replica_label: prometheus_replica
 thanos_store: false # Deploy Thanos store
 thanos_store_command:
@@ -59,12 +58,14 @@ thanos_compact_command:
       signature_version2: false
 thanos_receive: false # Deploy Thanos Receive
 thanos_receive_replicas: 1
+thanos_receive_replication_factor: 1
 thanos_receive_command:
   - receive
-  - --tsdb.path=/data
-  - --receive.replication-factor=1
-  - --label "receive_replica=\"0\""
-  - --label "receive_cluster=\"thanos\""
+  - --tsdb.path=/tsdb
+  - --http-address=0.0.0.0:10902
+  - '--receive.replication-factor={{ thanos_receive_replication_factor }}'
+  - --label=receive_replica="0"
+  - --label=receive_cluster="thanos"
   - |
     --objstore.config=type: S3 
     config:
