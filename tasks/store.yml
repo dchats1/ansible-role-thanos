@@ -46,4 +46,4 @@
     conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-store.pid'
     volume:
       - '{{ thanos_hostname }}-store-data-volume:/data'
-    command: '{{ thanos_store_command | flatten }}'
+    command: '{{ thanos_store_command }}'

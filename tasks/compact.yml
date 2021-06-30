@@ -34,4 +34,4 @@
     conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-compact.pid'
     volume:
       - '{{ thanos_hostname }}-compact-data-volume:/data'
-    command: '{{ thanos_compact_command | flatten }}'
+    command: '{{ thanos_compact_command }}'

@@ -63,7 +63,7 @@
     volume:
       - '{{ thanos_hostname }}-receive-{{ item }}-tsdb-volume:/tsdb'
       - '{{ thanos_base_dir }}/thanos-config/hashring.json:/data/hashring.json:z'
-    command: '{{ thanos_receive_command | flatten }}'
+    command: '{{ thanos_receive_command }}'
     state: started
   loop: '{{ range(0, thanos_receive_replicas)|list }}'
 

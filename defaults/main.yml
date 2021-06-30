@@ -28,8 +28,7 @@ thanos_query_command:
   - '--grpc-address=0.0.0.0:{{ thanos_grpc_port }}'
   - '--query.replica-label={{ thanos_query_replica_label }}'
 thanos_query_replica_label: prometheus_replica
-thanos_bucket_yaml:
-  - |
+thanos_bucket_yaml: |
     --objstore.config=type: S3 
     config:
       bucket: thanos
