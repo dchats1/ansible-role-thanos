@@ -43,12 +43,15 @@
 
 - debug:
     msg: 'Thanos Store IP: {{ thanos_store_ip }}'
+  when: thanos_store
 
 - debug:
     msg: 'Thanos Compactor IP: {{ thanos_compact_ip }}'
+  when: thanos_store
 
 - debug:
     msg: 'Thanos Receive IP(s): {{ thanos_receive_pod_ips }}'
+  when: thanos_receive
 
 - debug:
     msg: 'Thanos Load Balancer IP: {{ thanos_loadbalancer_pod_ip }}'

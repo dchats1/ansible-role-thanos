@@ -7,7 +7,7 @@
 - name: Create Thanos Store data volume
   containers.podman.podman_volume:
     state: present
-    name: '{{ prometheus_hostname }}-store-data-volume'
+    name: '{{ thanos_hostname }}-store-data-volume'
     label:
       app: thanos
 
@@ -35,7 +35,7 @@
 - set_fact:
     thanos_store_ip: '{{ container_info | json_query(query) }}'
   vars:
-    query: 'containers[0].NetworkSettings.Networks.{{ prometheus_podman_network }}.IPAddress'
+    query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
 ###
 
 - name: Setup Thanos Store container
@@ -45,5 +45,5 @@
     pod: 'thanos-store-pod'
     conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-store.pid'
     volume:
-      - '{{ prometheus_hostname }}-store-data-volume:/data'
-    command: '{{ thanos_store_command }}'
+      - '{{ thanos_hostname }}-store-data-volume:/data'
+    command: '{{ thanos_store_command | flatten }}'

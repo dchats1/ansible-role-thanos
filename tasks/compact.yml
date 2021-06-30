@@ -23,7 +23,7 @@
 - set_fact:
     thanos_compact_ip: '{{ container_info | json_query(query) }}'
   vars:
-    query: 'containers[0].NetworkSettings.Networks.{{ prometheus_podman_network }}.IPAddress'
+    query: 'containers[0].NetworkSettings.Networks.{{ thanos_podman_network }}.IPAddress'
 ###
 
 - name: Setup Thanos Compactor container
@@ -33,5 +33,5 @@
     pod: 'thanos-compact-pod'
     conmon_pidfile: '{{ thanos_base_dir }}/pids/thanos-compact.pid'
     volume:
-      - '{{ prometheus_hostname }}-compact-data-volume:/data'
-    command: '{{ thanos_compact_command }}'
+      - '{{ thanos_hostname }}-compact-data-volume:/data'
+    command: '{{ thanos_compact_command | flatten }}'
