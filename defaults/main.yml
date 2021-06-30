@@ -43,16 +43,7 @@ thanos_store: false # Deploy Thanos store
 thanos_store_command:
   - store
   - --data-dir=/data
-  - |
-    --objstore.config=type: S3 
-    config:
-      bucket: thanos
-      region: us-east-1
-      endpoint: s3.example.com
-      access_key: secret
-      secret_key: secret
-      insecure: false
-      signature_version2: false
+  - '{{ thanos_bucket_yaml }}'
 thanos_compact_command:
   - compact
   - --data-dir=/tmp/thanos-compact
